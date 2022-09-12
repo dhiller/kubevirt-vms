@@ -14,7 +14,7 @@ cd $GH/kubevirt.io/kubevirtci
 # fix kubevirtci tag due to regression
 export KUBEVIRTCI_TAG=2208120024-700826c
 
-export KUBEVIRT_NUM_NODES=2
+export KUBEVIRT_NUM_NODES=4
 export KUBEVIRT_PROVIDER=k8s-1.24
 
 export KUBEVIRT_DEPLOY_CDI=true
@@ -29,9 +29,18 @@ cd ${CWD}
 # since we are running inside kubevirtci
 export KUBECONFIG=$($GH/kubevirt.io/kubevirtci/cluster-up/kubeconfig.sh)
 
-# stable.txt contains the latest stable version of KubeVirt
-export KUBEVIRT_RELEASE=$(curl https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt \
+# export kubevirtci grafana and prometheus service
+# http://localhost:30008/?orgId=1
+kubectl port-forward -n monitoring service/grafana-nodeport 30008:3000 &
+# http://localhost:30007/graph
+kubectl port-forward -n monitoring service/prometheus-nodeport 30007:9090 &
+
+
+if [[ -z "$KUBEVIRT_RELEASE" ]]; then
+    # stable.txt contains the latest stable version of KubeVirt
+    export KUBEVIRT_RELEASE=$(curl https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt \
     | grep -oE '([0-9]+\.[0-9]+)' )
+fi
 
 # prepare a shared directory for the install
 export SHARED_DIR=$(mktemp -d)
@@ -77,8 +86,3 @@ kubectl patch kubevirt kubevirt -n kubevirt --type merge -p \
     '{"spec": {"configuration": {"emulatedMachines": [ "q35*", "pc-q35*", "pc*" ]}}}'
 
 
-# export kubevirtci grafana and prometheus service
-# http://localhost:30008/?orgId=1
-kubectl port-forward -n monitoring service/grafana-nodeport 30008:3000 &
-# http://localhost:30007/graph
-kubectl port-forward -n monitoring service/prometheus-nodeport 30007:9090 &

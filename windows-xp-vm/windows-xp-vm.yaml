@@ -10,6 +10,9 @@ spec:
       labels:
         kubevirt.io/domain: windows-xp
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+      evictionStrategy: LiveMigrate
       domain:
         clock:
           timer:
